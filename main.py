@@ -33,7 +33,7 @@ class PhoneFeatures(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "success", "message": "API працює! Перейдіть на /docs для тестування."}
+    return {"status": "success", "message": "API for smartphone price prediction"}
 
 @app.post("/predict")
 def predict_price(features: PhoneFeatures):
