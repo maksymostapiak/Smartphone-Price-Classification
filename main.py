@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from src.predict import PricePredictor
+from fastapi.responses import FileResponse
 
 app = FastAPI(
     title="Mobile Price Classification API",
@@ -33,7 +34,7 @@ class PhoneFeatures(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "success", "message": "API for smartphone price prediction"}
+    return FileResponse("index.html")
 
 @app.post("/predict")
 def predict_price(features: PhoneFeatures):

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Оцінка Смартфона</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-900">
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-blue-600 mb-2">Калькулятор Цінової Категорії</h1>
+            <p class="text-gray-600">Введіть характеристики смартфона, і ML-модель спрогнозує його ціновий клас.</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <form id="predictionForm">
+                <div id="inputsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    </div>
+
+                <div class="flex justify-center">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 transform hover:scale-105">
+                        Спрогнозувати ціну
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="resultBox" class="hidden mt-8 bg-green-50 border-l-4 border-green-500 p-6 rounded-r-xl shadow-md text-center">
+            <h2 class="text-xl text-gray-700">Прогнозована категорія:</h2>
+            <p id="resultText" class="text-3xl font-bold text-green-600 mt-2">...</p>
+        </div>
+    </div>
+
+    <script>
+        const features = [
+            'battery_power', 'blue', 'clock_speed', 'dual_sim', 'fc', 'four_g', 
+            'int_memory', 'm_dep', 'mobile_wt', 'n_cores', 'pc', 'px_height', 
+            'px_width', 'ram', 'sc_h', 'sc_w', 'talk_time', 'three_g', 'touch_screen', 'wifi'
+        ];
+
+        const defaults = {
+            ram: 2048, battery_power: 1500, int_memory: 32, n_cores: 4, px_height: 1080, px_width: 1920
+        };
+
+const grid = document.getElementById('inputsGrid');
+
+const binaryFeatures = ['blue', 'dual_sim', 'four_g', 'three_g', 'touch_screen', 'wifi'];
+
+const limits = {
+    battery_power: { min: 0, max: 2000 },
+    clock_speed: { min: 0.1, max: 3.0 },
+    fc: { min: 0, max: 20 },
+    int_memory: { min: 2, max: 64 },
+    m_dep: { min: 0.1, max: 1.0 },
+    mobile_wt: { min: 10, max: 200 },
+    n_cores: { min: 1, max: 8 },
+    pc: { min: 0, max: 20 },
+    px_height: { min: 0, max: 2000 },
+    px_width: { min: 500, max: 2000 },
+    ram: { min: 256, max: 4096 },
+    sc_h: { min: 5, max: 20 },
+    sc_w: { min: 0, max: 18 },
+    talk_time: { min: 2, max: 20 }
+};
+
+features.forEach(f => {
+    const val = defaults[f] !== undefined ? defaults[f] : 0;
+    let inputHtml = '';
+
+    if (binaryFeatures.includes(f)) {
+        inputHtml = `
+            <select id="${f}" name="${f}" class="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 bg-white">
+                <option value="0" ${val === 0 ? 'selected' : ''}>0 - Ні</option>
+                <option value="1" ${val === 1 ? 'selected' : ''}>1 - Так</option>
+            </select>
+        `;
+    } else {
+        const minAttr = limits[f] ? `min="${limits[f].min}"` : '';
+        const maxAttr = limits[f] ? `max="${limits[f].max}"` : '';
+        
+        inputHtml = `
+            <input type="number" step="any" id="${f}" name="${f}" value="${val}" ${minAttr} ${maxAttr} required
+                   class="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500">
+        `;
+    }
+
+    grid.innerHTML += `
+        <div class="flex flex-col">
+            <label class="text-sm font-semibold text-gray-600 mb-1" for="${f}">${f}</label>
+            ${inputHtml}
+        </div>
+    `;
+});
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {};
+            formData.forEach((value, key) => { data[key] = Number(value); });
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('resultBox').classList.remove('hidden');
+                    document.getElementById('resultText').innerText = result.price_label;
+                } else {
+                    alert("Помилка на сервері. Перевірте консоль.");
+                }
+            } catch (error) {
+                console.error("Помилка:", error);
+                alert("Не вдалося з'єднатися з API.");
+            }
+        });
+    </script>
+</body>
+</html>
